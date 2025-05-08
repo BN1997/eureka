@@ -4,7 +4,6 @@ import java.awt.AWTException;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
 
 import components.Tab;
 
@@ -20,7 +19,7 @@ public class FrameInitializerView extends JFrame {
         try {
         	Tab tabbedPane = new Tab();
 			tabbedPane.addTab("Displayer", new DisplayerBarView());
-	        tabbedPane.addTab("Auto Healing", new JPanel());
+	        tabbedPane.addTab("Auto Healing", new AutoHealingPickerView());
 	        tabbedPane.addTab("Informações", new JPanel());
 	        tabbedPane.addTab("Extra", new JPanel());
 	        
