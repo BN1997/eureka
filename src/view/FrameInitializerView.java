@@ -6,6 +6,8 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 
+import components.Tab;
+
 public class FrameInitializerView extends JFrame {
     private static final int DEFAULT_WIDTH = 600;
     private static final int DEFAULT_HEIGHT = 400;
@@ -16,7 +18,7 @@ public class FrameInitializerView extends JFrame {
     
     private void initializeTab() {
         try {
-            JTabbedPane tabbedPane = new JTabbedPane();
+        	Tab tabbedPane = new Tab();
 			tabbedPane.addTab("Displayer", new DisplayerBarView());
 	        tabbedPane.addTab("Auto Healing", new JPanel());
 	        tabbedPane.addTab("Informações", new JPanel());

@@ -5,6 +5,8 @@ import javax.swing.JScrollPane;
 
 import components.CaptureWindowBar;
 import components.ImagePanel;
+import components.Tab;
+import components.TabPanel;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
@@ -14,11 +16,11 @@ import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.Color;
 
-public class DisplayerBarView extends JPanel {
+public class DisplayerBarView extends TabPanel {
     private final ImagePanel[] imagePanels;
 
     public DisplayerBarView() throws AWTException {
-        JPanel mainPanel = new JPanel();
+    	TabPanel mainPanel = new TabPanel();
         mainPanel.setLayout(new GridLayout(3, 1, 10, 10));
         mainPanel.setBackground(Color.DARK_GRAY);
 
