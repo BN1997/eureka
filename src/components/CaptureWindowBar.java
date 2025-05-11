@@ -1,6 +1,9 @@
 package components;
 import javax.swing.JFrame;
 import javax.swing.Timer;
+
+import model.HealingRuleManager;
+
 import javax.swing.JLabel;
 import java.awt.AWTException;
 import java.awt.Color;
@@ -45,9 +48,9 @@ public class CaptureWindowBar extends JFrame {
      * @param index The index of this capture window (0, 1, or 2)
      * @throws AWTException If the Robot cannot be created
      */
-    public CaptureWindowBar(String label, int index, ImagePanel[] imagePanels) throws AWTException {
+    public CaptureWindowBar(String label, int index, ImagePanel[] imagePanels, Robot robot) throws AWTException {
     	this.imagePanels = imagePanels;
-        this.robot = new Robot();
+        this.robot = robot;
         this.captureLabel = label;
         this.captureIndex = index;
         
@@ -277,6 +280,9 @@ public class CaptureWindowBar extends JFrame {
             if (captureIndex == 0) { // Health bar
                 colorPercentage = calculateRedColorPercentage(capture);
                 colorMessage = String.format("%.1f%% de vida", colorPercentage);
+                               
+            HealingRuleManager.getInstance().checkAndExecuteRules(colorPercentage, 100);
+
             } else if (captureIndex == 1) { // Mana bar
                 colorPercentage = calculateBlueColorPercentage(capture);
                 colorMessage = String.format("%.1f%% de mana", colorPercentage);
@@ -358,20 +364,9 @@ public class CaptureWindowBar extends JFrame {
             
             // For debugging, print the color value when a match is found
             if (matched && matchingPixels % 10 == 0) { // Only print some matches to avoid spam
-                System.out.println("Matched health color at x=" + x + " RGB(" + red + "," + green + "," + blue + ")");
             }
         }
-        
-        // For debugging, print how many pixels matched each color
-        System.out.println("Health color matches:");
-        for (int i = 0; i < healthColors.length; i++) {
-            System.out.println("  Color #" + i + " (" + 
-                               healthColors[i][0] + "," + 
-                               healthColors[i][1] + "," + 
-                               healthColors[i][2] + "): " + 
-                               matchedColorCounts[i] + " pixels");
-        }
-        
+                
         // Calculate percentage
         return (double) matchingPixels / width * 100;
     }
@@ -443,18 +438,7 @@ public class CaptureWindowBar extends JFrame {
             
             // For debugging, print the color value when a match is found
             if (matched && matchingPixels % 10 == 0) { // Only print some matches to avoid spam
-                System.out.println("Matched mana color at x=" + x + " RGB(" + red + "," + green + "," + blue + ")");
             }
-        }
-        
-        // For debugging, print how many pixels matched each color
-        System.out.println("Mana color matches:");
-        for (int i = 0; i < manaColors.length; i++) {
-            System.out.println("  Color #" + i + " (" + 
-                               manaColors[i][0] + "," + 
-                               manaColors[i][1] + "," + 
-                               manaColors[i][2] + "): " + 
-                               matchedColorCounts[i] + " pixels");
         }
         
         // Calculate percentage
@@ -534,19 +518,9 @@ public class CaptureWindowBar extends JFrame {
             
             // For debugging, print the color value when a match is found
             if (matched && matchingPixels % 10 == 0) { // Only print some matches to avoid spam
-                System.out.println("Matched Sio color at x=" + x + " RGB(" + red + "," + green + "," + blue + ")");
             }
         }
         
-        // For debugging, print how many pixels matched each color
-        System.out.println("Sio color matches:");
-        for (int i = 0; i < sioColors.length; i++) {
-            System.out.println("  Color #" + i + " (" + 
-                               sioColors[i][0] + "," + 
-                               sioColors[i][1] + "," + 
-                               sioColors[i][2] + "): " + 
-                               matchedColorCounts[i] + " pixels");
-        }
         
         // Calculate percentage
         return (double) matchingPixels / width * 100;

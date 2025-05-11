@@ -14,12 +14,13 @@ import javax.swing.JLabel;
 import java.awt.AWTException;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import java.awt.Robot;
 import java.awt.Color;
 
 public class DisplayerBarView extends TabPanel {
     private final ImagePanel[] imagePanels;
 
-    public DisplayerBarView() throws AWTException {
+    public DisplayerBarView(Robot robot) throws AWTException {
     	TabPanel mainPanel = new TabPanel();
         mainPanel.setLayout(new GridLayout(3, 1, 10, 10));
         mainPanel.setBackground(Color.DARK_GRAY);
@@ -46,19 +47,18 @@ public class DisplayerBarView extends TabPanel {
         
         // Create three capture windows and link them to the display window
         // 1. Capture window for player's health
-        CaptureWindowBar healthCaptureWindow = new CaptureWindowBar("Vida do Personagem", 0, imagePanels);
+        CaptureWindowBar healthCaptureWindow = new CaptureWindowBar("Vida do Personagem", 0, imagePanels, robot);
         healthCaptureWindow.setVisible(true);
         healthCaptureWindow.startCapture();
         
         // 2. Capture window for player's mana
-        CaptureWindowBar manaCaptureWindow = new CaptureWindowBar("Mana do Personagem", 1, imagePanels);
+        CaptureWindowBar manaCaptureWindow = new CaptureWindowBar("Mana do Personagem", 1, imagePanels, robot);
         manaCaptureWindow.setVisible(true);
         manaCaptureWindow.startCapture();
         
         // 3. Capture window for other player's health (for Exura Sio)
-        CaptureWindowBar otherHealthCaptureWindow = new CaptureWindowBar("Vida do outro Personagem (Exura Sio)", 2, imagePanels);
+        CaptureWindowBar otherHealthCaptureWindow = new CaptureWindowBar("Vida do outro Personagem (Exura Sio)", 2, imagePanels, robot);
         otherHealthCaptureWindow.setVisible(true);
         otherHealthCaptureWindow.startCapture(); 
-        
     }
 } 
