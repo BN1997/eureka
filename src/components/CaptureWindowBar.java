@@ -3,6 +3,7 @@ import javax.swing.JFrame;
 import javax.swing.Timer;
 
 import model.HealingRuleManager;
+import model.WindowConfig;
 
 import javax.swing.JLabel;
 import java.awt.AWTException;
@@ -17,6 +18,8 @@ import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
 
 /**
@@ -58,12 +61,12 @@ public class CaptureWindowBar extends JFrame {
         setUndecorated(true);
         setBackground(new Color(0, 0, 0, 50)); // Semi-transparent background
         
-        // Position the window differently based on index
-        int x = 100 + (index * 50);
-        int y = 100 + (index * 75);
+        // Carregar posição e tamanho salvos
+        Point savedLocation = WindowConfig.loadWindowLocation("capture_" + index);
+        setLocation(savedLocation);
         
-        setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-        setLocation(x, y);
+        // Carregar tamanho salvo
+        setSize(WindowConfig.loadWindowSize("capture_" + index));
         setAlwaysOnTop(true);
         
         // Add a small label to identify the purpose of this capture window
@@ -76,6 +79,19 @@ public class CaptureWindowBar extends JFrame {
         
         // Add mouse listeners for dragging and resizing
         setupMouseListeners();
+        
+        // Adicionar listener para salvar posição e tamanho quando movido ou redimensionado
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentMoved(ComponentEvent e) {
+                saveWindowState();
+            }
+            
+            @Override
+            public void componentResized(ComponentEvent e) {
+                saveWindowState();
+            }
+        });
         
         // Set up the timer for capturing screen content
         captureTimer = new Timer(CAPTURE_DELAY, e -> captureAndDisplayScreen());
@@ -560,5 +576,13 @@ public class CaptureWindowBar extends JFrame {
                 g.setColor(Color.WHITE);
         }
         g.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
+    }
+    
+    private void saveWindowState() {
+        WindowConfig.saveWindowState(
+            "capture_" + captureIndex,
+            getLocation(),
+            getSize()
+        );
     }
 }
