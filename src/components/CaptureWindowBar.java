@@ -1,9 +1,13 @@
 package components;
 import javax.swing.JFrame;
 import javax.swing.Timer;
+import javax.swing.JPanel;
+import javax.swing.JButton;
+import javax.swing.BorderFactory;
 
 import model.HealingRuleManager;
-import model.WindowConfig;
+
+import utils.WindowConfigUtil;
 
 import javax.swing.JLabel;
 import java.awt.AWTException;
@@ -21,6 +25,7 @@ import java.awt.event.MouseMotionAdapter;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
+import java.awt.Dimension;
 
 /**
  * Represents the transparent, movable, and resizable window that defines
@@ -36,12 +41,16 @@ public class CaptureWindowBar extends JFrame {
     private final Timer captureTimer;
     private final String captureLabel;
     private final int captureIndex;
+    private boolean isLocked = false;
     
     private Point dragStart;
     private boolean isResizing = false;
     private int resizeEdge = 0; // 0=none, 1=top, 2=right, 3=bottom, 4=left, 5=top-left, 6=top-right, 7=bottom-right, 8=bottom-left
+    private JButton lockButton;
     
     private ImagePanel[] imagePanels;
+    
+    private double lastHealthPercentage = 100.0;
     
     /**
      * Creates a new CaptureWindow that is linked to the given DisplayWindow.
@@ -56,26 +65,35 @@ public class CaptureWindowBar extends JFrame {
         this.robot = robot;
         this.captureLabel = label;
         this.captureIndex = index;
+        this.lockButton = createLockButton();
         
         // Set up the window properties
         setUndecorated(true);
         setBackground(new Color(0, 0, 0, 50)); // Semi-transparent background
         
         // Carregar posição e tamanho salvos
-        Point savedLocation = WindowConfig.loadWindowLocation("capture_" + index);
+        Point savedLocation = WindowConfigUtil.loadWindowLocation("capture_" + index);
         setLocation(savedLocation);
         
         // Carregar tamanho salvo
-        setSize(WindowConfig.loadWindowSize("capture_" + index));
+        setSize(WindowConfigUtil.loadWindowSize("capture_" + index));
         setAlwaysOnTop(true);
         
-        // Add a small label to identify the purpose of this capture window
+        // Criar painel superior com título e botão de cadeado
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(new Color(0, 0, 0, 100));
+        
+        // Label do título
         JLabel titleLabel = new JLabel(label);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 9));
         titleLabel.setForeground(Color.WHITE);
-        titleLabel.setBackground(new Color(0, 0, 0, 100));
-        titleLabel.setOpaque(true);
-        add(titleLabel, BorderLayout.NORTH);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
+        headerPanel.add(titleLabel, BorderLayout.CENTER);
+        
+        // Botão de cadeado
+        headerPanel.add(lockButton, BorderLayout.EAST);
+        
+        add(headerPanel, BorderLayout.NORTH);
         
         // Add mouse listeners for dragging and resizing
         setupMouseListeners();
@@ -84,17 +102,47 @@ public class CaptureWindowBar extends JFrame {
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentMoved(ComponentEvent e) {
-                saveWindowState();
+                if (!isLocked) {
+                    saveWindowState();
+                }
             }
             
             @Override
             public void componentResized(ComponentEvent e) {
-                saveWindowState();
+                if (!isLocked) {
+                    saveWindowState();
+                }
             }
         });
         
         // Set up the timer for capturing screen content
         captureTimer = new Timer(CAPTURE_DELAY, e -> captureAndDisplayScreen());
+    }
+    
+    private JButton createLockButton() {
+        JButton button = new JButton();
+        button.setPreferredSize(new Dimension(16, 16));
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setForeground(Color.WHITE);
+        
+        // Usar um caractere Unicode para o ícone do cadeado
+        updateLockButtonIcon();
+        
+        button.addActionListener(e -> {
+            isLocked = !isLocked;
+            updateLockButtonIcon();
+        });
+        
+        return button;
+    }
+    
+    private void updateLockButtonIcon() {
+    	if (lockButton != null) {
+            lockButton.setText(isLocked ? "🔒" : "🔓");
+            lockButton.setToolTipText(isLocked ? "Destravar janela" : "Travar janela");
+    	}
     }
     
     /**
@@ -105,17 +153,21 @@ public class CaptureWindowBar extends JFrame {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                dragStart = e.getPoint();
-                resizeEdge = getResizeEdge(e.getPoint());
-                isResizing = resizeEdge != 0;
+                if (!isLocked) {
+                    dragStart = e.getPoint();
+                    resizeEdge = getResizeEdge(e.getPoint());
+                    isResizing = resizeEdge != 0;
+                }
             }
             
             @Override
             public void mouseReleased(MouseEvent e) {
-                dragStart = null;
-                isResizing = false;
-                resizeEdge = 0;
-                setCursor(Cursor.getDefaultCursor());
+                if (!isLocked) {
+                    dragStart = null;
+                    isResizing = false;
+                    resizeEdge = 0;
+                    setCursor(Cursor.getDefaultCursor());
+                }
             }
         });
         
@@ -123,27 +175,21 @@ public class CaptureWindowBar extends JFrame {
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
-                updateCursor(getResizeEdge(e.getPoint()));
+                if (!isLocked) {
+                    updateCursor(getResizeEdge(e.getPoint()));
+                }
             }
             
             @Override
             public void mouseDragged(MouseEvent e) {
-                if (dragStart == null) {
-                    return;
+                if (!isLocked && dragStart != null) {
+                    if (isResizing) {
+                        resizeWindow(e.getX() - dragStart.x, e.getY() - dragStart.y);
+                    } else {
+                        setLocation(getLocation().x + e.getX() - dragStart.x,
+                                  getLocation().y + e.getY() - dragStart.y);
+                    }
                 }
-                
-                int dx = e.getX() - dragStart.x;
-                int dy = e.getY() - dragStart.y;
-                
-                if (isResizing) {
-                    resizeWindow(dx, dy);
-                } else {
-                    // Move the window
-                    setLocation(getLocation().x + dx, getLocation().y + dy);
-                }
-                
-                // Capture screen after moving or resizing
-                captureAndDisplayScreen();
             }
         });
     }
@@ -294,11 +340,14 @@ public class CaptureWindowBar extends JFrame {
             String colorMessage = "";
             
             if (captureIndex == 0) { // Health bar
-                colorPercentage = calculateRedColorPercentage(capture);
+                colorPercentage = calculateRedColorPercentageOptimized(capture);
                 colorMessage = String.format("%.1f%% de vida", colorPercentage);
                                
-            HealingRuleManager.getInstance().checkAndExecuteRules(colorPercentage, 100);
-
+                // Só chama o HealingRuleManager se a vida mudou significativamente
+                if (Math.abs(lastHealthPercentage - colorPercentage) > 1.0) {
+                    HealingRuleManager.getInstance().checkAndExecuteRules(colorPercentage, 100);
+                    lastHealthPercentage = colorPercentage;
+                }
             } else if (captureIndex == 1) { // Mana bar
                 colorPercentage = calculateBlueColorPercentage(capture);
                 colorMessage = String.format("%.1f%% de mana", colorPercentage);
@@ -322,68 +371,49 @@ public class CaptureWindowBar extends JFrame {
      * @param image The captured image
      * @return The percentage (0-100) of pixels that match the target colors
      */
-    private double calculateRedColorPercentage(BufferedImage image) {
+    private double calculateRedColorPercentageOptimized(BufferedImage image) {
         int width = image.getWidth();
         int height = image.getHeight();
-        
-        // Target health bar colors in RGB format
-        int[][] healthColors = {
-            // #66393f -> RGB
-            {102, 57, 63},
-            // #8f3636 -> RGB
-            {143, 54, 54},
-            // #ad3636 -> RGB
-            {173, 54, 54},
-            // #d34b4b -> RGB
-            {211, 75, 75},
-            // #f26363 -> RGB
-            {242, 99, 99},
-            // #fd7777 -> RGB
-            {253, 119, 119},
-            // #d66e6e -> RGB
-            {214, 110, 110}
-        };
-        
-        // Use the horizontal middle line
         int y = height / 2;
         
-        int matchingPixels = 0;
-        int[] matchedColorCounts = new int[healthColors.length];
+        // Otimização: pré-calcula os valores RGB das cores alvo
+        int[][] healthColors = {
+            {102, 57, 63},   // #66393f
+            {143, 54, 54},   // #8f3636
+            {173, 54, 54},   // #ad3636
+            {211, 75, 75},   // #d34b4b
+            {242, 99, 99},   // #f26363
+            {253, 119, 119}, // #fd7777
+            {214, 110, 110}  // #d66e6e
+        };
         
-        // Count pixels along the horizontal line that are close to any target color
+        // Otimização: usa array de pixels para leitura mais rápida
+        int[] pixels = new int[width];
+        image.getRGB(0, y, width, 1, pixels, 0, width);
+        
+        int matchingPixels = 0;
+        int threshold = 25;
+        
+        // Otimização: processa pixels em lotes
         for (int x = 0; x < width; x++) {
-            int rgb = image.getRGB(x, y);
+            int rgb = pixels[x];
             int red = (rgb >> 16) & 0xFF;
             int green = (rgb >> 8) & 0xFF;
             int blue = rgb & 0xFF;
             
-            // Define a threshold for color similarity (lower = more strict)
-            int threshold = 25;
-            
-            // Check if the pixel color is close to any of the target colors
-            boolean matched = false;
-            for (int i = 0; i < healthColors.length; i++) {
-                int[] targetColor = healthColors[i];
-                int targetRed = targetColor[0];
-                int targetGreen = targetColor[1]; 
-                int targetBlue = targetColor[2];
-                
-                if (Math.abs(red - targetRed) <= threshold && 
-                    Math.abs(green - targetGreen) <= threshold && 
-                    Math.abs(blue - targetBlue) <= threshold) {
-                    matchingPixels++;
-                    matchedColorCounts[i]++;
-                    matched = true;
-                    break; // We count each pixel only once
+            // Otimização: verifica primeiro se é um tom de vermelho antes de comparar com todas as cores
+            if (red > green && red > blue) {
+                for (int[] targetColor : healthColors) {
+                    if (Math.abs(red - targetColor[0]) <= threshold && 
+                        Math.abs(green - targetColor[1]) <= threshold && 
+                        Math.abs(blue - targetColor[2]) <= threshold) {
+                        matchingPixels++;
+                        break;
+                    }
                 }
             }
-            
-            // For debugging, print the color value when a match is found
-            if (matched && matchingPixels % 10 == 0) { // Only print some matches to avoid spam
-            }
         }
-                
-        // Calculate percentage
+        
         return (double) matchingPixels / width * 100;
     }
     
@@ -579,7 +609,7 @@ public class CaptureWindowBar extends JFrame {
     }
     
     private void saveWindowState() {
-        WindowConfig.saveWindowState(
+        WindowConfigUtil.saveWindowState(
             "capture_" + captureIndex,
             getLocation(),
             getSize()
